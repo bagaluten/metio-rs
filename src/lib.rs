@@ -15,7 +15,13 @@ pub struct EventType {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Event {
+
+    #[cfg_attr(feature = "serde", serde(rename = "eventId"))]
     pub event_id: String,
+
+    #[cfg_attr(feature = "serde", serde(rename = "objectId"))]
     pub object_id: String,
+
+    #[cfg_attr(feature = "serde", serde(rename = "eventType"))]
     pub event_type: EventType,
 }
