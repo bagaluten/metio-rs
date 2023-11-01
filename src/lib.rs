@@ -1,14 +1,12 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
+pub struct EventType {
+    pub package: String,
+    pub group: String,
+    pub name: String,
+    pub version: String,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub struct Event {
+    pub event_id: String,
+    pub object_id: String,
+    pub event_type: EventType,
 }
