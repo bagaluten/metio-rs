@@ -19,3 +19,6 @@ serde = {version = "1.0.190", optional = true}
 
 [features]
 serde = ["serde/derive", "chrono/serde"]
+
+[dev-dependencies]
+serde_json = "1.0.108"
