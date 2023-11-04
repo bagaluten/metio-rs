@@ -21,4 +21,6 @@ pub struct Event {
 
     #[cfg_attr(feature = "serde", serde(rename = "eventType"))]
     pub event_type: EventType,
+
+    pub timestamp: chrono::DateTime<chrono::Utc>,
 }
