@@ -65,7 +65,7 @@ mod tests {
         assert_eq!(event.event_type.name, "name");
         assert_eq!(event.event_type.version, "version");
     }
-    
+
     #[test]
     #[cfg(feature = "serde")]
     fn test_serialization() {

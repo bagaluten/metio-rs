@@ -65,12 +65,16 @@ impl SqliteClient {
             .map_err(|e| e.to_string())?;
 
         for i in 0..1000 {
-            statement.bind(&[
-                           (1, format!("event-{}", i).as_str()),
-                           (2, "metio.bagaluten.io/test-event"),
-                           (3, "testObject"),
-                           (4, chrono::Utc::now().to_string().as_str())
-            ][..]).map_err(|e| e.to_string())?;
+            statement
+                .bind(
+                    &[
+                        (1, format!("event-{}", i).as_str()),
+                        (2, "metio.bagaluten.io/test-event"),
+                        (3, "testObject"),
+                        (4, chrono::Utc::now().to_string().as_str()),
+                    ][..],
+                )
+                .map_err(|e| e.to_string())?;
             statement.next().map_err(|e| e.to_string())?;
             statement.reset().map_err(|e| e.to_string())?;
         }
