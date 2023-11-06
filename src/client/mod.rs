@@ -1,9 +1,7 @@
 #[cfg(feature = "client_sqlite")]
 pub mod sqlite;
 
-pub trait ClientConfig: Clone + Default + std::fmt::Debug {
-    fn new() -> Self;
-}
+pub trait ClientConfig: Clone + Default + std::fmt::Debug {}
 
 pub trait Client: Sized {
     type Config: ClientConfig;
