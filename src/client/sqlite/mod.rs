@@ -105,7 +105,7 @@ mod test {
     fn test_sqlite_client() -> Result<()> {
         use super::*;
         let config = SqliteClientConfig {
-            path: "test.sql".to_string(),
+            path: ":memory:".to_string(),
             create_testdata: true,
         };
 
