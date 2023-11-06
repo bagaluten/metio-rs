@@ -1,5 +1,5 @@
+use super::{Client, ClientConfig, Result};
 use sqlite::Connection;
-use super::{ClientConfig, Client};
 
 #[derive(Clone, Default, Debug)]
 pub struct SqliteClientConfig {
@@ -16,20 +16,20 @@ impl ClientConfig for SqliteClientConfig {
 
 pub struct SqliteClient {
     conn: Connection,
+    config: SqliteClientConfig,
 }
 
 impl Client for SqliteClient {
     type Config = SqliteClientConfig;
 
-    fn new(config: &Self::Config) -> Self {
-        Self {
+    fn new(config: &Self::Config) -> Result<Self> {
+        Ok(Self {
             conn: sqlite::open(config.path.clone()).unwrap(),
-        }
+            config: config.clone(),
+        })
     }
 
-    fn get_config(&self) -> &Self::Config {
-        unimplemented!()
+    fn get_config(&self) -> Result<Self::Config> {
+       Ok(self.config.clone())
     }
 }
-
-
