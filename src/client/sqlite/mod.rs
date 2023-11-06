@@ -108,9 +108,15 @@ mod test {
             path: ":memory:".to_string(),
             create_testdata: true,
         };
-
         SqliteClient::new(&config)?;
-
         Ok(())
+    }
+
+    #[test]
+    fn default_config() {
+        use super::*;
+        let congig = SqliteClientConfig::default();
+        assert_eq!(congig.path, ":memory:".to_string());
+        assert_eq!(congig.create_testdata, false);
     }
 }
