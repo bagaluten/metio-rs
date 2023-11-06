@@ -56,12 +56,24 @@ impl SqliteClient {
     // This function can be quite handy when you develop your
     // application and need some data for testing.
     fn generate_testdata(&self) -> Result<()> {
-        self.conn
-            .execute(
+        let mut statement = self
+            .conn
+            .prepare(
                 "INSERT INTO event (id, event_type, objectId, timestamp)
-                VALUES ('1', 'test', '1', 1)",
+                VALUES (?, ?, ?, ?);",
             )
             .map_err(|e| e.to_string())?;
+
+        for i in 0..1000 {
+            statement.bind(&[
+                           (1, format!("event-{}", i).as_str()),
+                           (2, "metio.bagaluten.io/test-event"),
+                           (3, "testObject"),
+                           (4, chrono::Utc::now().to_string().as_str())
+            ][..]).map_err(|e| e.to_string())?;
+            statement.next().map_err(|e| e.to_string())?;
+            statement.reset().map_err(|e| e.to_string())?;
+        }
 
         Ok(())
     }
@@ -75,10 +87,29 @@ impl SqliteClient {
                 id TEXT PRIMARY KEY,
                 event_type TEXT NOT NULL,
                 objectId TEXT,
-                timestamp INTEGER NOT NULL,
-            )",
+                timestamp INTEGER NOT NULL
+            );",
             )
             .map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::Result;
+
+    #[test]
+    fn test_sqlite_client() -> Result<()> {
+        use super::*;
+        let config = SqliteClientConfig {
+            path: "test.sql".to_string(),
+            create_testdata: true,
+        };
+
+        SqliteClient::new(&config)?;
 
         Ok(())
     }
