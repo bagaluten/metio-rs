@@ -1,6 +1,7 @@
 use super::{Client, ClientConfig, Result};
 use crate::types::{Event, EventType};
 use sqlite::{Connection, State};
+use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct SqliteClientConfig {
@@ -84,11 +85,19 @@ impl Client for SqliteClient {
                 .parse::<chrono::DateTime<chrono::Utc>>()
                 .map_err(|e| e.to_string())?;
 
+            let payload = statement
+                .read::<String, _>("payload")
+                .map_err(|e| e.to_string())?;
+
+            let payload = serde_json::from_str::<HashMap<String, String>>(&payload)
+                .map_err(|e| e.to_string())?;
+
             events.push(Event {
                 event_id,
                 object_id,
                 event_type,
                 timestamp,
+                payload,
             })
         }
 
@@ -101,12 +110,14 @@ impl SqliteClient {
     // This function can be quite handy when you develop your
     // application and need some data for testing.
     fn generate_testdata(&self) -> Result<()> {
+        self.conn
+            .execute("DELETE FROM event;")
+            .map_err(|e| e.to_string())?;
         let mut statement = self
             .conn
             .prepare(
-                "INSERT OR REPLACE INTO event
-                (id, event_type, objectId, timestamp)
-                VALUES (?, ?, ?, ?);",
+                "INSERT INTO event (id, event_type, objectId, timestamp, payload)
+                VALUES (?, ?, ?, ?, json(?));",
             )
             .map_err(|e| e.to_string())?;
 
@@ -118,6 +129,7 @@ impl SqliteClient {
                         (2, "metio.bagaluten.io/test-event/v1"),
                         (3, "testObject"),
                         (4, chrono::Utc::now().to_string().as_str()),
+                        (5, "{\"test\": \"test\"}"),
                     ][..],
                 )
                 .map_err(|e| e.to_string())?;
@@ -137,7 +149,8 @@ impl SqliteClient {
                 id TEXT PRIMARY KEY,
                 event_type TEXT NOT NULL,
                 objectId TEXT,
-                timestamp INTEGER NOT NULL
+                timestamp INTEGER NOT NULL,
+                payload JSON NOT NULL
             );",
             )
             .map_err(|e| e.to_string())?;
