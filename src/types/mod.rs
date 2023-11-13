@@ -13,8 +13,7 @@ impl std::str::FromStr for EventType {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts = s.split('/')
-            .collect::<Vec<&str>>();
+        let parts = s.split('/').collect::<Vec<&str>>();
 
         if parts.len() != 3 {
             return Err(format!("invalid event type: {}", s));

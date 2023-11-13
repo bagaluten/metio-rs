@@ -1,5 +1,6 @@
 use super::{Client, ClientConfig, Result};
-use sqlite::Connection;
+use crate::types::{Event, EventType};
+use sqlite::{Connection, State};
 
 #[derive(Clone, Debug)]
 pub struct SqliteClientConfig {
@@ -48,6 +49,50 @@ impl Client for SqliteClient {
 
     fn get_config(&self) -> Result<Self::Config> {
         Ok(self.config.clone())
+    }
+
+    fn get_events(&self, count: u32) -> Result<Box<[Event]>> {
+        let mut statement = self
+            .conn
+            .prepare("SELECT * FROM events limit ?")
+            .map_err(|e| e.to_string())?;
+
+        statement
+            .bind::<&[(usize, i64)]>(&[(1, count.into())])
+            .map_err(|e| e.to_string())?;
+
+        let mut events: Vec<Event> = Vec::new();
+        while let Ok(State::Row) = statement.next() {
+            let event_id = statement
+                .read::<String, _>("id")
+                .map_err(|e| e.to_string())?;
+
+            let object_id = statement
+                .read::<String, _>("objectId")
+                .map_err(|e| e.to_string())?;
+
+            let event_type = statement
+                .read::<String, _>("event_type")
+                .map_err(|e| e.to_string())?
+                .parse::<EventType>()?;
+
+            let timestamp = statement
+                .read::<String, _>("timestamp")
+                .map_err(|e| e.to_string())?;
+
+            let timestamp = timestamp
+                .parse::<chrono::DateTime<chrono::Utc>>()
+                .map_err(|e| e.to_string())?;
+
+            events.push(Event {
+                event_id,
+                object_id,
+                event_type,
+                timestamp,
+            })
+        }
+
+        Ok(events.into_boxed_slice())
     }
 }
 
