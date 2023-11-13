@@ -104,7 +104,8 @@ impl SqliteClient {
         let mut statement = self
             .conn
             .prepare(
-                "INSERT INTO event (id, event_type, objectId, timestamp)
+                "INSERT OR REPLACE INTO event
+                (id, event_type, objectId, timestamp)
                 VALUES (?, ?, ?, ?);",
             )
             .map_err(|e| e.to_string())?;
@@ -178,6 +179,25 @@ mod test {
         };
 
         let client = SqliteClient::new(&config)?;
+        let events = client.get_events(10)?;
+        assert_eq!(events.len(), 10);
+        Ok(())
+    }
+
+    #[test]
+    fn create_test_data_twice() -> Result<()> {
+        use super::*;
+        let config = SqliteClientConfig {
+            path: ":memory:".to_string(),
+            create_testdata: true,
+        };
+
+        let client = SqliteClient::new(&config)?;
+        let events = client.get_events(10)?;
+        assert_eq!(events.len(), 10);
+
+        client.generate_testdata()?;
+
         let events = client.get_events(10)?;
         assert_eq!(events.len(), 10);
         Ok(())
