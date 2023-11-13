@@ -54,7 +54,7 @@ impl Client for SqliteClient {
     fn get_events(&self, count: u32) -> Result<Box<[Event]>> {
         let mut statement = self
             .conn
-            .prepare("SELECT * FROM events limit ?")
+            .prepare("SELECT * FROM event limit ?")
             .map_err(|e| e.to_string())?;
 
         statement
@@ -114,7 +114,7 @@ impl SqliteClient {
                 .bind(
                     &[
                         (1, format!("event-{}", i).as_str()),
-                        (2, "metio.bagaluten.io/test-event"),
+                        (2, "metio.bagaluten.io/test-event/v1"),
                         (3, "testObject"),
                         (4, chrono::Utc::now().to_string().as_str()),
                     ][..],
@@ -167,5 +167,19 @@ mod test {
         let congig = SqliteClientConfig::default();
         assert_eq!(congig.path, ":memory:".to_string());
         assert_eq!(congig.create_testdata, false);
+    }
+
+    #[test]
+    fn test_get_events() -> Result<()> {
+        use super::*;
+        let config = SqliteClientConfig {
+            path: ":memory:".to_string(),
+            create_testdata: true,
+        };
+
+        let client = SqliteClient::new(&config)?;
+        let events = client.get_events(10)?;
+        assert_eq!(events.len(), 10);
+        Ok(())
     }
 }
