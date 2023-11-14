@@ -40,6 +40,8 @@ pub struct Event {
     pub event_type: EventType,
 
     pub timestamp: chrono::DateTime<chrono::Utc>,
+
+    pub payload: std::collections::HashMap<String, String>,
 }
 
 #[cfg(test)]
@@ -70,6 +72,7 @@ mod tests {
                 version: "version".to_string(),
             },
             timestamp: chrono::Utc::now(),
+            payload: std::collections::HashMap::new(),
         };
 
         assert_eq!(event.event_id, "event_id");
@@ -91,10 +94,10 @@ mod tests {
                 version: "version".to_string(),
             },
             timestamp: chrono::Utc::now(),
+            payload: std::collections::HashMap::new(),
         };
 
         let serialized = serde_json::to_string(&event).unwrap();
-        println!("{}", serialized);
         let deserialized: Event = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(event.event_id, deserialized.event_id);
