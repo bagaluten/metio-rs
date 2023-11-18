@@ -106,4 +106,13 @@ mod tests {
         assert_eq!(event.event_type.name, deserialized.event_type.name);
         assert_eq!(event.event_type.version, deserialized.event_type.version);
     }
+
+    #[test]
+    fn test_event_type_from_str() {
+        let event_type = "group/name/version".parse::<EventType>().unwrap();
+
+        assert_eq!(event_type.group, "group");
+        assert_eq!(event_type.name, "name");
+        assert_eq!(event_type.version, "version");
+    }
 }
