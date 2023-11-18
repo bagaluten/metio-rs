@@ -5,9 +5,8 @@ pub mod sqlite;
 
 pub trait ClientConfig: Clone + Default + std::fmt::Debug {}
 
-pub trait Client: Sized {
+pub trait Client {
     type Config: ClientConfig;
-    fn new(config: &Self::Config) -> Result<Self>;
     fn get_config(&self) -> Result<Self::Config>;
 
     // get the last 'count' events
