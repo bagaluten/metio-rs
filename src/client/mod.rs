@@ -5,7 +5,7 @@ pub mod sqlite;
 
 pub trait ClientConfig: Clone + Default + std::fmt::Debug {}
 
-pub trait Client: {
+pub trait Client {
     type Config: ClientConfig;
     fn get_config(&self) -> Result<Self::Config>;
 
