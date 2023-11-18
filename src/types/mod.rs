@@ -115,4 +115,11 @@ mod tests {
         assert_eq!(event_type.name, "name");
         assert_eq!(event_type.version, "version");
     }
+
+    #[test]
+    fn test_event_type_from_str_invalid() {
+        let event_type = "group/name".parse::<EventType>();
+
+        assert!(event_type.is_err());
+    }
 }
