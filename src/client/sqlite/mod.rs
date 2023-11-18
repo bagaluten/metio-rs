@@ -32,22 +32,6 @@ pub struct SqliteClient {
 impl Client for SqliteClient {
     type Config = SqliteClientConfig;
 
-    fn new(config: &Self::Config) -> Result<Self> {
-        let conn = sqlite::open(config.path.clone()).map_err(|e| e.to_string())?;
-        let client = Self {
-            conn,
-            config: config.clone(),
-        };
-
-        client.ensure_schema()?;
-
-        if config.create_testdata {
-            client.generate_testdata()?;
-        }
-
-        Ok(client)
-    }
-
     fn get_config(&self) -> Result<Self::Config> {
         Ok(self.config.clone())
     }
@@ -106,10 +90,27 @@ impl Client for SqliteClient {
 }
 
 impl SqliteClient {
+    pub fn new(config: &SqliteClientConfig) -> Result<Self> {
+        let conn = sqlite::open(config.path.clone()).map_err(|e| e.to_string())?;
+        let client = Self {
+            conn,
+            config: config.clone(),
+        };
+
+        client.ensure_schema()?;
+
+        if config.create_testdata {
+            client.generate_testdata()?;
+        }
+
+        Ok(client)
+    }
+
     // Generate some test events.
     // This function can be quite handy when you develop your
     // application and need some data for testing.
     fn generate_testdata(&self) -> Result<()> {
+        log::info!("Generating test data");
         self.conn
             .execute("DELETE FROM event;")
             .map_err(|e| e.to_string())?;
@@ -142,6 +143,7 @@ impl SqliteClient {
 
     // ensure all tables are created
     fn ensure_schema(&self) -> Result<()> {
+        log::debug!("Ensuring schema");
         let _ = self
             .conn
             .execute(
