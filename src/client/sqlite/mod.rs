@@ -1,6 +1,9 @@
-use super::{Client, ClientConfig, Result};
+use super::ClientConfig;
+use super::{AsyncClient, EventFilter, Result};
 use crate::types::{Event, EventType};
-use sqlite::{Connection, State};
+use async_trait::async_trait;
+use futures::stream::TryStreamExt;
+use sqlx::{Executor, Row, SqlitePool};
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
@@ -25,82 +28,103 @@ impl Default for SqliteClientConfig {
 impl ClientConfig for SqliteClientConfig {}
 
 pub struct SqliteClient {
-    conn: Connection,
+    pool: sqlx::SqlitePool,
     config: SqliteClientConfig,
 }
 
-impl Client for SqliteClient {
+#[async_trait]
+impl AsyncClient for SqliteClient {
     type Config = SqliteClientConfig;
 
-    fn get_config(&self) -> Result<Self::Config> {
+    async fn get_config(&self) -> Result<Self::Config> {
         Ok(self.config.clone())
     }
 
-    fn get_events(&self, count: u32) -> Result<Box<[Event]>> {
-        let mut statement = self
-            .conn
-            .prepare("SELECT * FROM event limit ?")
-            .map_err(|e| e.to_string())?;
+    async fn get_events(&self, count: u32) -> Result<Box<[Event]>> {
+        return self.get_events_filtered(count, EventFilter::None).await;
+    }
 
-        statement
-            .bind::<&[(usize, i64)]>(&[(1, count.into())])
-            .map_err(|e| e.to_string())?;
-
+    async fn get_events_filtered(&self, count: u32, filter: EventFilter) -> Result<Box<[Event]>> {
         let mut events: Vec<Event> = Vec::new();
-        while let Ok(State::Row) = statement.next() {
-            let event_id = statement
-                .read::<String, _>("id")
-                .map_err(|e| e.to_string())?;
+        let mut query_builder = build_query(count, filter);
+        let query = query_builder.build();
+        use sqlx::Execute;
+        println!("{}", query.sql());
 
-            let object_id = statement
-                .read::<String, _>("objectId")
-                .map_err(|e| e.to_string())?;
+        let mut result = self.pool.fetch(query);
+        while let Some(row) = result.try_next().await.map_err(|e| e.to_string())? {
+            let event_id: String = row.get("id");
+            let object_id: String = row.get("objectId");
+            let event_type: String = row.get("event_type");
+            let timestamp: String = row.get("timestamp");
+            let payload: String = row.get("payload");
 
-            let event_type = statement
-                .read::<String, _>("event_type")
-                .map_err(|e| e.to_string())?
-                .parse::<EventType>()?;
-
-            let timestamp = statement
-                .read::<String, _>("timestamp")
-                .map_err(|e| e.to_string())?;
-
+            let event_type = event_type.parse::<EventType>()?;
             let timestamp = timestamp
                 .parse::<chrono::DateTime<chrono::Utc>>()
-                .map_err(|e| e.to_string())?;
-
-            let payload = statement
-                .read::<String, _>("payload")
                 .map_err(|e| e.to_string())?;
 
             let payload = serde_json::from_str::<HashMap<String, String>>(&payload)
                 .map_err(|e| e.to_string())?;
 
-            events.push(Event {
+            let event = Event {
                 event_id,
                 object_id,
                 event_type,
                 timestamp,
                 payload,
-            })
-        }
+            };
 
-        Ok(events.into_boxed_slice())
+            events.push(event);
+        }
+        return Ok(events.into_boxed_slice());
     }
 }
 
+fn build_query(count: u32, filter: EventFilter) -> sqlx::QueryBuilder<'static, sqlx::Sqlite> {
+    let mut query_builder =
+        sqlx::QueryBuilder::<'static, sqlx::Sqlite>::new("SELECT * FROM event ");
+
+    match filter {
+        EventFilter::None => (),
+        EventFilter::ByType(event_type) => {
+            query_builder
+                .push("WHERE event_type = ")
+                .push_bind(event_type.to_string());
+            ()
+        }
+        EventFilter::ByObject(object_id) => {
+            query_builder
+                .push("WHERE object_id = ")
+                .push_bind(object_id);
+            ()
+        }
+        EventFilter::ById(event_id) => {
+            query_builder.push("WHERE id = ").push_bind(event_id);
+            ()
+        }
+    };
+
+    query_builder.push(" LIMIT ").push_bind(count);
+
+    query_builder
+}
+
 impl SqliteClient {
-    pub fn new(config: &SqliteClientConfig) -> Result<Self> {
-        let conn = sqlite::open(config.path.clone()).map_err(|e| e.to_string())?;
+    pub async fn new(config: &SqliteClientConfig) -> Result<Self> {
+        let pool = SqlitePool::connect(config.path.as_str())
+            .await
+            .map_err(|e| e.to_string())?;
+
         let client = Self {
-            conn,
+            pool,
             config: config.clone(),
         };
 
-        client.ensure_schema()?;
+        client.ensure_schema().await?;
 
         if config.create_testdata {
-            client.generate_testdata()?;
+            client.generate_testdata().await?;
         }
 
         Ok(client)
@@ -109,53 +133,42 @@ impl SqliteClient {
     // Generate some test events.
     // This function can be quite handy when you develop your
     // application and need some data for testing.
-    fn generate_testdata(&self) -> Result<()> {
-        log::info!("Generating test data");
-        self.conn
-            .execute("DELETE FROM event;")
-            .map_err(|e| e.to_string())?;
-        let mut statement = self
-            .conn
-            .prepare(
-                "INSERT INTO event (id, event_type, objectId, timestamp, payload)
-                VALUES (?, ?, ?, ?, json(?));",
-            )
-            .map_err(|e| e.to_string())?;
+    async fn generate_testdata(&self) -> Result<()> {
+        let query = sqlx::query("DELETE FROM event;");
+        self.pool.execute(query).await.map_err(|e| e.to_string())?;
+
+        const INSERT_QUERY: &str= "INSERT INTO event (id, event_type, objectId, timestamp, payload) VALUES (?, ?, ?, ?, ?)";
 
         for i in 0..1000 {
-            statement
-                .bind(
-                    &[
-                        (1, format!("event-{}", i).as_str()),
-                        (2, "metio.bagaluten.io/test-event/v1"),
-                        (3, "testObject"),
-                        (4, chrono::Utc::now().to_string().as_str()),
-                        (5, "{\"test\": \"test\"}"),
-                    ][..],
-                )
+            let query = sqlx::query(INSERT_QUERY);
+            query
+                .bind(format!("event-{}", i))
+                .bind("metio.bagaluten.io/test-event/v1")
+                .bind("testObject")
+                .bind(chrono::Utc::now().to_string())
+                .bind("{\"test\": \"test\"}")
+                .execute(&self.pool)
+                .await
                 .map_err(|e| e.to_string())?;
-            statement.next().map_err(|e| e.to_string())?;
-            statement.reset().map_err(|e| e.to_string())?;
         }
 
         Ok(())
     }
 
     // ensure all tables are created
-    fn ensure_schema(&self) -> Result<()> {
-        log::debug!("Ensuring schema");
-        let _ = self
-            .conn
-            .execute(
-                "CREATE TABLE IF NOT EXISTS event (
-                id TEXT PRIMARY KEY,
-                event_type TEXT NOT NULL,
-                objectId TEXT,
-                timestamp INTEGER NOT NULL,
-                payload JSON NOT NULL
-            );",
-            )
-            .map_err(|e| e.to_string())?;
+    async fn ensure_schema(&self) -> Result<()> {
+        sqlx::query(
+            "CREATE TABLE IF NOT EXISTS event (
+            id TEXT PRIMARY KEY,
+            event_type TEXT NOT NULL,
+            objectId TEXT,
+            timestamp INTEGER NOT NULL,
+            payload JSON NOT NULL
+        );",
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
 
         Ok(())
     }
@@ -165,6 +178,7 @@ impl SqliteClient {
 mod test {
 
     use super::Result;
+    use futures::executor::block_on;
 
     #[test]
     fn test_sqlite_client() -> Result<()> {
@@ -173,7 +187,8 @@ mod test {
             path: ":memory:".to_string(),
             create_testdata: true,
         };
-        SqliteClient::new(&config)?;
+
+        block_on(SqliteClient::new(&config))?;
         Ok(())
     }
 
@@ -192,9 +207,12 @@ mod test {
             path: ":memory:".to_string(),
             create_testdata: true,
         };
+        let client = block_on(SqliteClient::new(&config))?;
+        let events = block_on(client.get_events(10))?;
+        assert_eq!(events.len(), 10);
 
-        let client = SqliteClient::new(&config)?;
-        let events = client.get_events(10)?;
+        let client = block_on(SqliteClient::new(&config))?;
+        let events = block_on(client.get_events(10))?;
         assert_eq!(events.len(), 10);
         Ok(())
     }
@@ -207,14 +225,32 @@ mod test {
             create_testdata: true,
         };
 
-        let client = SqliteClient::new(&config)?;
-        let events = client.get_events(10)?;
+        let client = block_on(SqliteClient::new(&config))?;
+        let events = block_on(client.get_events(10))?;
         assert_eq!(events.len(), 10);
 
-        client.generate_testdata()?;
+        block_on(client.generate_testdata())?;
 
-        let events = client.get_events(10)?;
+        let events = block_on(client.get_events(10))?;
         assert_eq!(events.len(), 10);
+        Ok(())
+    }
+
+    #[test]
+    fn test_get_events_filtered() -> Result<()> {
+        use super::*;
+        let config = SqliteClientConfig {
+            path: ":memory:".to_string(),
+            create_testdata: true,
+        };
+
+        let client = block_on(SqliteClient::new(&config))?;
+        let events = block_on(client.get_events_filtered(
+            10,
+            EventFilter::ByType("metio.bagaluten.io/test-event/v1".parse()?),
+        ))?;
+
+        assert_ne!(events.len(), 0);
         Ok(())
     }
 }
