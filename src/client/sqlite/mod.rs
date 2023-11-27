@@ -27,6 +27,7 @@ impl Default for SqliteClientConfig {
 
 impl ClientConfig for SqliteClientConfig {}
 
+#[derive(Clone, Debug)]
 pub struct SqliteClient {
     pool: sqlx::SqlitePool,
     config: SqliteClientConfig,
