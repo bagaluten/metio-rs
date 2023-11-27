@@ -48,8 +48,6 @@ impl AsyncClient for SqliteClient {
         let mut events: Vec<Event> = Vec::new();
         let mut query_builder = build_query(count, filter);
         let query = query_builder.build();
-        use sqlx::Execute;
-        println!("{}", query.sql());
 
         let mut result = self.pool.fetch(query);
         while let Some(row) = result.try_next().await.map_err(|e| e.to_string())? {
