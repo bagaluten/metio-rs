@@ -30,4 +30,4 @@ sqlx = { version = "0.7.3", features = ["sqlite", "runtime-async-std"] }
 serde = ["serde/derive", "chrono/serde"]
 client = []
 client_sqlite = ["sqlx", "client", "serde_json", "futures"]
-
+client_tokio = ["client", "client_sqlite", "sqlx/runtime-tokio"]
