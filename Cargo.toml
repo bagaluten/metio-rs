@@ -14,20 +14,12 @@ exclude = [".github", ".gitignore"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-nats = "0.35.1"
 async-trait = "0.1.74"
 chrono = "0.4.31"
-futures = {version = "0.3.29", optional = true }
 serde = { version = "1.0.190", optional = true }
 serde_json = { version = "1.0.108", optional = true }
-log = "0.4.20"
-sqlx = { version = "0.7.3", optional = true, features = ["sqlite"] }
-
-[dev-dependencies]
-sqlx = { version = "0.7.3", features = ["sqlite", "runtime-async-std"] }
-
+tracing = "0.1.40"
 
 [features]
 serde = ["serde/derive", "chrono/serde"]
-client = []
-client_sqlite = ["sqlx", "client", "serde_json", "futures"]
-client_tokio = ["client", "client_sqlite", "sqlx/runtime-tokio"]
