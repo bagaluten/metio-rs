@@ -21,7 +21,6 @@ use async_nats as nats;
 #[derive(Clone, Default, Debug)]
 pub struct Config {
     pub host: String,
-    pub port: u16,
 }
 
 /// The Client struct holds the information to which metio cluster we are currently talking.

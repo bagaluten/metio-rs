@@ -21,5 +21,9 @@ serde = { version = "1.0.190", optional = true }
 serde_json = { version = "1.0.108", optional = true }
 tracing = "0.1.40"
 
+
+[dev-dependencies]
+tokio = { version = "1.38.0" }
+
 [features]
 serde = ["serde/derive", "chrono/serde"]

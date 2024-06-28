@@ -13,24 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+mod streams;
 
-use crate::client::Client;
+#[tokio::test]
+async fn test_nats_connect() -> Result<(), String> {
+    use metio::client;
 
+    let mut cfg = client::Config::default();
+    cfg.host = "localhost".to_string();
 
-#[derive(Debug, Clone)]
-pub struct Stream {
-    name: String,
-    client: Client,
+    let _ = client::connect(cfg).await.map_err(|e| e.to_string())?;
+    Ok(())
 }
 
-impl Stream {
-    pub fn new(name: String, client: Client) -> Self {
-        Self { name, client }
-    }
+#[tokio::test()]
+async fn test_nats_connect_error() -> Result<(), String> {
+    use metio::client;
 
-    pub fn name(&self) -> &str {
-        &self.name
-    }
+    let mut cfg = client::Config::default();
+    cfg.host = "dfjkdjfgkkge.".to_string();
+
+    let res = client::connect(cfg).await;
+    assert!(res.is_err());
+    Ok(())
 }
-
 

@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-use crate::client::Client;
+#[tokio::test()]
+async fn test_writing_to_streams() -> Result<(), String> {
+    use metio::client;
+    use metio::streams::Stream;
 
+    let mut cfg = client::Config::default();
+    cfg.host = "localhost".to_string();
 
-#[derive(Debug, Clone)]
-pub struct Stream {
-    name: String,
-    client: Client,
+    let client = client::connect(cfg).await.map_err(|e| e.to_string())?;
+    let _ = Stream::new("peter".to_string(), client);
+
+    Ok(())
 }
-
-impl Stream {
-    pub fn new(name: String, client: Client) -> Self {
-        Self { name, client }
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-}
-
-
