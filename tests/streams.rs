@@ -20,7 +20,7 @@ async fn test_writing_to_streams() -> Result<(), String> {
     use metio::client;
     use metio::streams::Stream;
 
-    let cfg = client::Config{
+    let cfg = client::Config {
         host: "localhost".to_string(),
         prefix: None,
     };
