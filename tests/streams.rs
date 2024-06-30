@@ -15,12 +15,15 @@
  */
 
 #[tokio::test()]
+#[cfg(feature = "streams")]
 async fn test_writing_to_streams() -> Result<(), String> {
     use metio::client;
     use metio::streams::Stream;
 
-    let mut cfg = client::Config::default();
-    cfg.host = "localhost".to_string();
+    let cfg = client::Config{
+        host: "localhost".to_string(),
+        prefix: None,
+    };
 
     let client = client::connect(cfg).await.map_err(|e| e.to_string())?;
     let _ = Stream::new("peter".to_string(), client);

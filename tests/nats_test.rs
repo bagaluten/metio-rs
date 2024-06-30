@@ -15,23 +15,29 @@
  */
 mod streams;
 
+#[cfg(feature = "client")]
 #[tokio::test]
 async fn test_nats_connect() -> Result<(), String> {
     use metio::client;
 
-    let mut cfg = client::Config::default();
-    cfg.host = "localhost".to_string();
+    let cfg = client::Config {
+        host: "localhost".to_string(),
+        prefix: None,
+    };
 
     let _ = client::connect(cfg).await.map_err(|e| e.to_string())?;
     Ok(())
 }
 
+#[cfg(feature = "client")]
 #[tokio::test()]
 async fn test_nats_connect_error() -> Result<(), String> {
     use metio::client;
 
-    let mut cfg = client::Config::default();
-    cfg.host = "dfjkdjfgkkge.".to_string();
+    let cfg = client::Config {
+        host: "kdjfkdgkerhg".to_string(),
+        prefix: None,
+    };
 
     let res = client::connect(cfg).await;
     assert!(res.is_err());
