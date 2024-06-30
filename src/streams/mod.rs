@@ -15,8 +15,11 @@
  */
 
 use crate::client::Client;
+use crate::types::Event;
 
-
+/// A stream is a Metio Stream. It should not be confused with
+/// streams in that are used elsewhere in Rust. This is not something
+/// you can call `next` on or iterate over.
 #[derive(Debug, Clone)]
 pub struct Stream {
     name: String,
@@ -31,6 +34,9 @@ impl Stream {
     pub fn name(&self) -> &str {
         &self.name
     }
+
+    pub fn publish(&mut self, data: Vec<Event>) {
+        let subject = self.name.clone();
+        let _ = self.client.publish(subject, data);
+    }
 }
-
-

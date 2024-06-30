@@ -18,7 +18,7 @@
 use serde::{Deserialize, Serialize};
 
 /// The Type information of the event.
-/// 
+///
 /// Types in Metio are useful since it allows for a more structured way of defining or parsing
 /// events. For some events there event exists a schema registry that can be used to validate.
 #[derive(Debug, Clone)]

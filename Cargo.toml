@@ -15,11 +15,10 @@ exclude = [".github", ".gitignore"]
 
 [dependencies]
 async-nats = "0.35.1"
-async-trait = "0.1.74"
 chrono = "0.4.31"
 serde = { version = "1.0.190", optional = true }
 serde_json = { version = "1.0.108", optional = true }
-tracing = "0.1.40"
+tracing = { version = "0.1.40", features = ["attributes"] }
 
 
 [dev-dependencies]
@@ -27,3 +26,5 @@ tokio = { version = "1.38.0" }
 
 [features]
 serde = ["serde/derive", "chrono/serde"]
+client = ["serde"]
+streams = ["client"]

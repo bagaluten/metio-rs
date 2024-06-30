@@ -16,6 +16,10 @@
 
 pub mod error;
 
+use tracing::Instrument;
+
+use self::error::Error;
+use crate::types::Event;
 use async_nats as nats;
 
 #[derive(Clone, Default, Debug)]
@@ -38,10 +42,38 @@ impl Client {
     pub fn get_underlying(&self) -> nats::Client {
         self.client.clone()
     }
-        
+
+    /// Publish a list of events to a subject.
+    pub async fn publish(&self, subject: String, data: Vec<Event>) -> Result<(), Error> {
+        let mut failed_events: Vec<(Event, String)> = Vec::new();
+        for event in data {
+            let res: Result<(), String> = async {
+                let bytes = serde_json::to_vec(&event).map_err(|e| e.to_string())?;
+                self.internal_publish(&subject, bytes).await?;
+                Ok(())
+            }
+            .instrument(tracing::trace_span!("publish", event_id = event.event_id))
+            .await;
+
+            if let Err(e) = res {
+                failed_events.push((event, e));
+            }
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(level = "debug", skip(self))]
+    async fn internal_publish(&self, subject: &String, data: Vec<u8>) -> Result<(), String> {
+        self.client
+            .publish(subject.clone(), data.into())
+            .await
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
 }
 
-/// Connect to a Metio Server. 
+/// Connect to a Metio Server.
 /// If the connection was successfull a client will be returned.
 ///
 /// # Example
@@ -55,13 +87,16 @@ impl Client {
 /// # }
 /// ```
 pub async fn connect<C>(cfg: C) -> Result<Client, error::Error>
-where C: Into<Config>{
+where
+    C: Into<Config>,
+{
     let cfg = cfg.into();
 
-    let client = nats::connect(&cfg.host).await.map_err(|e| error::Error::new(error::Kind::Connect, e.to_string()))?;
+    let client = nats::connect(&cfg.host)
+        .await
+        .map_err(|e| error::Error::new(error::Kind::Connect, e.to_string()))?;
 
     tracing::info!("Connecting to server with config: {:?}", cfg);
 
-   Ok(Client::new(client))
+    Ok(Client::new(client))
 }
-

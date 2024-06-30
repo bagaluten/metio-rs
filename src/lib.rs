@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
-pub mod client;
 pub mod types;
-pub mod streams;
-
 pub use types::*;
+
+// modules only present when client feature is enabled
+#[cfg(feature = "client")]
+pub mod client;
+
+// modules only present when streams feature is enabled
+#[cfg(feature = "streams")]
+pub mod streams;

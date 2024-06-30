@@ -37,4 +37,3 @@ async fn test_nats_connect_error() -> Result<(), String> {
     assert!(res.is_err());
     Ok(())
 }
-
