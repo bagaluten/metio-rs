@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+use crate::client::error::Error;
 use crate::client::Client;
 use crate::types::Event;
 
@@ -31,12 +32,15 @@ impl Stream {
         Self { name, client }
     }
 
-    pub fn name(&self) -> &str {
+    // Get the name of the stream that this object is connected to.
+    pub fn get_name(&self) -> &str {
         &self.name
     }
 
-    pub fn publish(&mut self, data: Vec<Event>) {
+    /// Push a vector of events to the stream.
+    /// Every element will be pushed as a single message to the stream.
+    pub async fn publish(&mut self, events: Vec<Event>) -> Result<(), Error> {
         let subject = self.name.clone();
-        let _ = self.client.publish(subject, data);
+        self.client.publish(subject, events).await
     }
 }

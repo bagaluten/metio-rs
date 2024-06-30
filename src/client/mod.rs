@@ -25,19 +25,17 @@ use async_nats as nats;
 #[derive(Clone, Default, Debug)]
 pub struct Config {
     pub host: String,
+    pub prefix: Option<String>,
 }
 
 /// The Client struct holds the information to which metio cluster we are currently talking.
 #[derive(Debug, Clone)]
 pub struct Client {
     client: nats::Client,
+    prefix: Option<String>,
 }
 
 impl Client {
-    pub fn new(client: nats::Client) -> Self {
-        Self { client }
-    }
-
     /// This function returns the underlying NATS client.
     pub fn get_underlying(&self) -> nats::Client {
         self.client.clone()
@@ -45,6 +43,10 @@ impl Client {
 
     /// Publish a list of events to a subject.
     pub async fn publish(&self, subject: String, data: Vec<Event>) -> Result<(), Error> {
+        let subject = match &self.prefix {
+            Some(prefix) => format!("{}.{}", prefix, subject),
+            None => subject,
+        };
         let mut failed_events: Vec<(Event, String)> = Vec::new();
         for event in data {
             let res: Result<(), String> = async {
@@ -98,5 +100,8 @@ where
 
     tracing::info!("Connecting to server with config: {:?}", cfg);
 
-    Ok(Client::new(client))
+    Ok(Client {
+        client,
+        prefix: cfg.prefix,
+    })
 }
