@@ -62,6 +62,14 @@ impl Client {
             }
         }
 
+        if !failed_events.is_empty() {
+            return Err(Error::new_with_related(
+                error::Kind::Send,
+                format!("Failed to publish events: {:?}", failed_events),
+                failed_events.into_iter().map(|(_, e)| e).collect(),
+            ));
+        }
+
         Ok(())
     }
 
@@ -71,6 +79,8 @@ impl Client {
             .publish(subject.clone(), data.into())
             .await
             .map_err(|e| e.to_string())?;
+
+        self.client.flush().await.map_err(|e| e.to_string())?;
         Ok(())
     }
 }

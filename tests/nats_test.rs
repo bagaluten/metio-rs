@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-mod streams;
-
 #[cfg(feature = "client")]
 #[tokio::test]
 async fn test_nats_connect() -> Result<(), String> {

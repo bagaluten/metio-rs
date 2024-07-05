@@ -22,7 +22,6 @@ use serde::{Deserialize, Serialize};
 /// Types in Metio are useful since it allows for a more structured way of defining or parsing
 /// events. For some events there event exists a schema registry that can be used to validate.
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct EventType {
     /// The group of the event type.
     /// If its not set `core` is assumed.
@@ -33,6 +32,41 @@ pub struct EventType {
 
     /// The version of the event type.
     pub version: String,
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for EventType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let event_type = self.to_string();
+        serializer.serialize_str(&event_type)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for EventType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let parts = s.split('/').collect::<Vec<&str>>();
+
+        if parts.len() != 3 {
+            return Err(serde::de::Error::custom(format!(
+                "invalid event type: {}",
+                s
+            )));
+        }
+
+        Ok(Self {
+            group: parts[0].to_string(),
+            name: parts[1].to_string(),
+            version: parts[2].to_string(),
+        })
+    }
 }
 
 impl std::str::FromStr for EventType {
@@ -66,7 +100,7 @@ pub struct Event {
     pub event_id: String,
 
     #[cfg_attr(feature = "serde", serde(rename = "objectId"))]
-    pub object_id: String,
+    pub object_id: Option<String>,
 
     #[cfg_attr(feature = "serde", serde(rename = "eventType"))]
     pub event_type: EventType,
@@ -97,7 +131,7 @@ mod tests {
     fn test_event() {
         let event = Event {
             event_id: "event_id".to_string(),
-            object_id: "object_id".to_string(),
+            object_id: Some("object_id".to_string()),
             event_type: EventType {
                 group: "group".to_string(),
                 name: "name".to_string(),
@@ -108,7 +142,7 @@ mod tests {
         };
 
         assert_eq!(event.event_id, "event_id");
-        assert_eq!(event.object_id, "object_id");
+        assert_eq!(event.object_id, Some("object_id".to_string()));
         assert_eq!(event.event_type.group, "group");
         assert_eq!(event.event_type.name, "name");
         assert_eq!(event.event_type.version, "version");
@@ -119,7 +153,7 @@ mod tests {
     fn test_serialization() {
         let event = Event {
             event_id: "event_id".to_string(),
-            object_id: "object_id".to_string(),
+            object_id: Some("object_id".to_string()),
             event_type: EventType {
                 group: "group".to_string(),
                 name: "name".to_string(),

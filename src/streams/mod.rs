@@ -39,7 +39,7 @@ impl Stream {
 
     /// Push a vector of events to the stream.
     /// Every element will be pushed as a single message to the stream.
-    pub async fn publish(&mut self, events: Vec<Event>) -> Result<(), Error> {
+    pub async fn publish(&self, events: Vec<Event>) -> Result<(), Error> {
         let subject = self.name.clone();
         self.client.publish(subject, events).await
     }
