@@ -42,7 +42,10 @@ impl Client {
     }
 
     /// Publish a list of events to a subject.
-    pub async fn publish(&self, subject: String, data: Vec<Event>) -> Result<(), Error> {
+    pub async fn publish<I>(&self, subject: String, data: I) -> Result<(), Error>
+    where
+        I: IntoIterator<Item = Event>,
+    {
         let subject = match &self.prefix {
             Some(prefix) => format!("{}.{}", prefix, subject),
             None => subject,
