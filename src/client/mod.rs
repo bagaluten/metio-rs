@@ -76,7 +76,7 @@ impl Client {
         Ok(())
     }
 
-    #[tracing::instrument(level = "debug", skip(self))]
+    #[tracing::instrument(level = "trace", skip(data))]
     async fn internal_publish(&self, subject: &String, data: Vec<u8>) -> Result<(), String> {
         self.client
             .publish(subject.clone(), data.into())

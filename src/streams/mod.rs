@@ -39,6 +39,7 @@ impl Stream {
 
     /// Push a vector of events to the stream.
     /// Every element will be pushed as a single message to the stream.
+    #[tracing::instrument(skip(events), level = "debug")]
     pub async fn publish<I>(&self, events: I) -> Result<(), Error>
     where
         I: IntoIterator<Item = Event>,
