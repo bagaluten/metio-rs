@@ -93,6 +93,12 @@ impl std::fmt::Display for EventType {
     }
 }
 
+/// Returns the current timestamp in UTC.
+/// This is useful for setting the timestamp of an event
+pub fn timestamp_now() -> chrono::DateTime<chrono::Utc> {
+    chrono::Utc::now()
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Event {
