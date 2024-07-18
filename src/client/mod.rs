@@ -118,3 +118,19 @@ where
         prefix: cfg.prefix,
     })
 }
+
+#[macro_export]
+macro_rules! connect {
+    ($host:expr) => {
+        $crate::client::connect($crate::client::Config {
+            host: $host.to_string(),
+            prefix: None,
+        })
+    };
+    ($host:expr, $prefix:expr) => {
+        $crate::client::connect($crate::client::Config {
+            host: $host.to_string(),
+            prefix: Some($prefix.to_string()),
+        })
+    };
+}

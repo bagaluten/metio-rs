@@ -17,18 +17,15 @@
 #[tokio::test()]
 #[cfg(feature = "streams")]
 async fn test_writing_to_streams() -> Result<(), String> {
-    use metio::client;
     use metio::streams::Stream;
     use metio::types::{Event, EventType};
     use std::collections::HashMap;
     use std::str::FromStr;
 
-    let cfg = client::Config {
-        host: "localhost".to_string(),
-        prefix: None,
-    };
+    let client = metio::connect!("localhost")
+        .await
+        .map_err(|e| e.to_string())?;
 
-    let client = client::connect(cfg).await.map_err(|e| e.to_string())?;
     let s = Stream::new("peter".to_string(), client);
 
     let event_type = EventType::from_str("core/echo/1").map_err(|e| e.to_string())?;
