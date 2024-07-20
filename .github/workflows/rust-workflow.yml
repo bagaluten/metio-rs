@@ -25,10 +25,16 @@ jobs:
   
   build:
     runs-on: ubuntu-latest
+    services:
+      natts:
+        image: nats:alpine
+        ports:
+          - "4222:4222"
+        
     steps:
     - uses: dtolnay/rust-toolchain@stable
     - uses: actions/checkout@v4
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --verbose --all-features
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --verbose --all-features
