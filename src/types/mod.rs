@@ -22,6 +22,7 @@ use serde::{Deserialize, Serialize};
 /// Types in Metio are useful since it allows for a more structured way of defining or parsing
 /// events. For some events there event exists a schema registry that can be used to validate.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "async-graphql", derive(async_graphql::SimpleObject))]
 pub struct EventType {
     /// The group of the event type.
     /// If its not set `core` is assumed.
@@ -101,6 +102,7 @@ pub fn timestamp_now() -> chrono::DateTime<chrono::Utc> {
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "async-graphql", derive(async_graphql::SimpleObject))]
 pub struct Event {
     #[cfg_attr(feature = "serde", serde(rename = "eventId"))]
     pub event_id: String,
