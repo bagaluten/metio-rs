@@ -30,12 +30,12 @@ pub struct Config {
 
 /// The Client struct holds the information to which metio cluster we are currently talking.
 #[derive(Debug, Clone)]
-pub struct Client {
+pub struct Metio {
     client: nats::Client,
     prefix: Option<String>,
 }
 
-impl Client {
+impl Metio {
     /// This function returns the underlying NATS client.
     pub fn get_underlying(&self) -> nats::Client {
         self.client.clone()
@@ -101,7 +101,7 @@ impl Client {
 /// # Ok(())
 /// # }
 /// ```
-pub async fn connect<C>(cfg: C) -> Result<Client, error::Error>
+pub async fn connect<C>(cfg: C) -> Result<Metio, error::Error>
 where
     C: Into<Config>,
 {
@@ -113,7 +113,7 @@ where
 
     tracing::info!("Connecting to server with config: {:?}", cfg);
 
-    Ok(Client {
+    Ok(Metio {
         client,
         prefix: cfg.prefix,
     })

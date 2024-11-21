@@ -26,7 +26,7 @@ async fn test_writing_to_streams() -> Result<(), String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    let s = Stream::new("peter".to_string(), client);
+    let s = Stream::new(client, "peter".to_string());
 
     let event_type = EventType::from_str("core/echo/1").map_err(|e| e.to_string())?;
     let events = vec![

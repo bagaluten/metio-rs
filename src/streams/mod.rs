@@ -15,7 +15,7 @@
  */
 
 use crate::client::error::Error;
-use crate::client::Client;
+use crate::client::Metio;
 use crate::types::Event;
 
 /// A stream is a Metio Stream. It should not be confused with
@@ -24,11 +24,11 @@ use crate::types::Event;
 #[derive(Debug, Clone)]
 pub struct Stream {
     name: String,
-    client: Client,
+    client: Metio,
 }
 
 impl Stream {
-    pub fn new(name: String, client: Client) -> Self {
+    pub fn new(client: Metio, name: String) -> Self {
         Self { name, client }
     }
 
