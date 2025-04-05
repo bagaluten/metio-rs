@@ -15,7 +15,7 @@ exclude = [".github", ".gitignore"]
 
 [dependencies]
 async-graphql = { version = "7", optional = true }
-async-nats = "0.38.0"
+async-nats = "0.40.0"
 chrono = "0.4.31"
 serde = { version = "1.0.190", optional = true }
 serde_json = { version = "1.0.108", optional = true }
